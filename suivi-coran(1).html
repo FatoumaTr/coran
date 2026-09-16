@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Suivi Coran — Fatima &amp; Madou</title>
+<link rel="icon" href="data:,">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style id="main-style">
+:root{
+  --green-900:#0d3d34;
+  --green-700:#146356;
+  --green-600:#1d7a68;
+  --green-500:#2b9483;
+  --gold-600:#b8873a;
+  --gold-500:#caa25e;
+  --gold-300:#e3cd9a;
+  --cream:#faf6ec;
+  --cream-2:#f1ead9;
+  --ink:#20261f;
+  --ink-soft:#5a6157;
+  --card-bg:#ffffff;
+  --border:#e6ddc8;
+  --shadow:0 8px 24px rgba(20,60,52,.10);
+  --radius:16px;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "Avenir Next", Roboto, sans-serif;
+  --font-serif: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --cream:#12201c;
+    --cream-2:#0e1a16;
+    --ink:#eef4ee;
+    --ink-soft:#a9b7ac;
+    --card-bg:#182b25;
+    --border:#25423a;
+    --shadow:0 8px 24px rgba(0,0,0,.35);
+    --gold-300:#5a4a26;
+  }
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  font-family:var(--font);
+  background:
+    radial-gradient(circle at 15% -10%, var(--gold-300) 0%, transparent 45%),
+    var(--cream);
+  color:var(--ink);
+  min-height:100vh;
+  padding:28px 16px 60px;
+}
+.wrap{max-width:880px;margin:0 auto;}
+header.top{
+  text-align:center;
+  margin-bottom:6px;
+  padding-bottom:22px;
+  border-bottom:1px solid var(--border);
+  position:relative;
+}
+header.top .kicker{
+  display:block;
+  font-size:11.5px;letter-spacing:.14em;font-weight:600;text-transform:uppercase;
+  color:var(--gold-600);margin-bottom:10px;
+}
+header.top h1{
+  font-family:var(--font-serif);
+  font-size:clamp(26px,4vw,36px);
+  margin:0 0 8px;
+  color:var(--green-900);
+  font-weight:700;
+  letter-spacing:-.01em;
+}
+@media (prefers-color-scheme: dark){ header.top h1{ color:var(--gold-300); } }
+header.top p{
+  color:var(--ink-soft);margin:0;font-size:15px;font-family:var(--font-serif);font-style:italic;
+}
+.syncstate{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:11px;color:var(--ink-soft);margin-top:14px;
+}
+.syncstate .sdot{width:6px;height:6px;border-radius:50%;background:#9aa39a;}
+.syncstate.ok .sdot{background:var(--green-600);}
+.syncstate.err .sdot{background:#b23a3a;}
+.streak{
+  margin-top:16px;display:flex;justify-content:center;align-items:center;gap:28px;flex-wrap:wrap;
+}
+.streak .stat{text-align:center;}
+.streak .stat .n{
+  display:block;font-family:var(--font-serif);font-size:26px;font-weight:700;color:var(--green-700);line-height:1.1;
+}
+@media (prefers-color-scheme: dark){ .streak .stat .n{ color:var(--gold-500);} }
+.streak .stat .l{display:block;font-size:11.5px;color:var(--ink-soft);letter-spacing:.03em;margin-top:3px;}
+.streak .divider{width:1px;height:30px;background:var(--border);}
+.cards{
+  display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:26px;
+}
+@media (max-width:680px){ .cards{grid-template-columns:1fr;} }
+.card{
+  background:var(--card-bg);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:22px 22px 18px;
+  overflow-x:auto;
+}
+.card .cardhead{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+.card h2{margin:0 0 4px;font-size:19px;font-family:var(--font-serif);font-weight:700;color:var(--green-900);}
+@media (prefers-color-scheme: dark){ .card h2{ color:var(--gold-300);} }
+.card .obj{font-size:13px;color:var(--ink-soft);margin:0;}
+.linkbtn{
+  background:none;border:none;cursor:pointer;font-size:12.5px;
+  color:var(--ink-soft);padding:4px 0;text-decoration:underline;text-underline-offset:3px;
+  text-decoration-color:var(--border);flex-shrink:0;margin-top:2px;
+}
+.linkbtn:hover{color:var(--green-700);text-decoration-color:var(--green-700);}
+.pageNow{
+  margin:16px 0 8px;display:flex;align-items:baseline;gap:8px;
+}
+.pageNow .num{font-family:var(--font-serif);font-size:40px;font-weight:700;color:var(--green-700);}
+@media (prefers-color-scheme: dark){ .pageNow .num{ color:var(--gold-500);} }
+.pageNow .lbl{font-size:13px;color:var(--ink-soft);}
+.progress{
+  height:8px;background:var(--cream-2);border-radius:999px;overflow:hidden;margin:10px 0 6px;
+}
+.progress > div{
+  height:100%;background:linear-gradient(90deg,var(--green-600),var(--gold-500));
+  border-radius:999px;transition:width .3s ease;
+}
+.progtxt{font-size:12px;color:var(--ink-soft);margin:0 0 12px;}
+.cyclecount{font-size:12.5px;color:var(--ink-soft);margin-bottom:12px;}
+.cyclecount b{color:var(--ink);}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+button.primary{
+  background:var(--green-700);color:#fdfaf0;border:none;
+  padding:10px 16px;border-radius:11px;font-size:14px;font-weight:600;
+  cursor:pointer;transition:background .15s ease;
+}
+button.primary:hover{background:var(--green-600);}
+button.primary:disabled{opacity:.5;cursor:default;}
+button.secondary{
+  background:transparent;color:var(--green-700);border:1px solid var(--border);
+  padding:9px 14px;border-radius:11px;font-size:13.5px;cursor:pointer;font-weight:600;
+}
+@media (prefers-color-scheme: dark){ button.secondary{ color:var(--gold-300);} }
+button.secondary:hover{background:var(--cream-2);}
+.form{
+  margin-top:14px;padding:14px;background:var(--cream-2);border-radius:12px;
+  display:flex;flex-direction:column;gap:10px;
+}
+.form label{font-size:12.5px;color:var(--ink-soft);font-weight:600;}
+.form input, .form select{
+  padding:9px 10px;border-radius:9px;border:1px solid var(--border);
+  background:var(--card-bg);color:var(--ink);font-size:14px;width:100%;font-family:var(--font);
+}
+.form .row2{display:flex;gap:10px;}
+.form .row2 > div{flex:1;min-width:0;}
+.formbtns{display:flex;gap:8px;justify-content:flex-end;margin-top:2px;}
+.history{margin-top:18px;}
+.history h3{
+  font-size:12.5px;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--ink-soft);margin:0 0 8px;font-weight:700;
+}
+.hlist{max-height:190px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;padding-right:2px;}
+.hitem{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:8px 10px;background:var(--cream-2);border-radius:9px;font-size:13.5px;
+}
+.hitem .hleft{display:flex;align-items:baseline;gap:10px;min-width:0;}
+.hitem .dot{width:5px;height:5px;border-radius:50%;background:var(--green-600);flex-shrink:0;}
+@media (prefers-color-scheme: dark){ .hitem .dot{ background:var(--gold-500);} }
+.hitem .date{color:var(--ink-soft);font-size:12px;white-space:nowrap;}
+.hitem .pg{font-weight:600;}
+.hitem .who{font-size:11.5px;color:var(--ink-soft);background:var(--card-bg);padding:2px 7px;border-radius:999px;border:1px solid var(--border);}
+.hitem .del{
+  background:none;border:none;color:var(--ink-soft);cursor:pointer;font-size:11.5px;
+  opacity:0;text-decoration:underline;text-underline-offset:2px;padding:2px 2px;flex-shrink:0;
+  transition:opacity .15s ease;
+}
+.hitem:hover .del{opacity:.7;}
+.hitem .del:hover{opacity:1;color:#b23a3a;}
+.empty{font-size:13px;color:var(--ink-soft);font-style:italic;padding:6px 0;}
+footer.foot{
+  text-align:center;margin-top:34px;color:var(--ink-soft);font-size:12.5px;
+}
+.settingsPanel{
+  margin-top:14px;padding:14px;border:1px dashed var(--border);border-radius:12px;
+  display:flex;flex-direction:column;gap:10px;
+}
+.settingsPanel .row2{display:flex;gap:10px;}
+.settingsPanel .row2>div{flex:1;}
+.settingsPanel label{font-size:12px;color:var(--ink-soft);font-weight:600;}
+.settingsPanel input{
+  padding:8px 9px;border-radius:8px;border:1px solid var(--border);
+  background:var(--card-bg);color:var(--ink);font-size:13.5px;width:100%;
+}
+.settingsPanel .hint{font-size:11.5px;color:var(--ink-soft);}
+.loadingscreen{
+  text-align:center;padding:80px 20px;color:var(--ink-soft);font-family:var(--font-serif);font-style:italic;
+}
+</style>
+</head>
+<body>
+<div id="app"><div class="loadingscreen">Chargement du suivi…</div></div>
+
+<script id="main-script">
+(function(){
+  "use strict";
+
+  // --- Connexion à la base partagée (Supabase) ---
+  var SUPABASE_URL = "https://nsastisrqyhjqvthoifr.supabase.co";
+  var SUPABASE_KEY = "sb_publishable_nJsYNORLbBiewH6jac_Vmg_kCN7W8oR";
+  var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  var ROW_ID = 1;
+
+  var defaultState = {
+    people: ["Fatima", "Madou"],
+    trackers: {
+      khatm: {
+        name: "Khatm complet du Coran",
+        step: 2,
+        totalPages: 604,
+        currentPage: 0,
+        cycles: 0,
+        history: []
+      },
+      baqara: {
+        name: "Sourate Al-Baqara",
+        step: 1,
+        totalPages: null,
+        currentPage: 0,
+        cycles: 0,
+        history: []
+      }
+    }
+  };
+
+  var state = null;
+  var app = document.getElementById('app');
+  var openForm = null;
+  var openSettings = null;
+  var syncStatus = "connecting"; // connecting | ok | err
+  var saving = false;
+
+  function todayISO(){
+    var d = new Date();
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().slice(0,10);
+  }
+  function fmtDateShort(iso){
+    try{
+      var d = new Date(iso + 'T00:00:00');
+      return d.toLocaleDateString('fr-FR', {day:'numeric', month:'short'});
+    }catch(e){ return iso; }
+  }
+  function lastPageNumber(pagesStr){
+    var m = String(pagesStr).match(/(\d+)(?!.*\d)/);
+    return m ? parseInt(m[0],10) : null;
+  }
+  function esc(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  function computeStreak(){
+    var allDates = {};
+    Object.keys(state.trackers).forEach(function(k){
+      state.trackers[k].history.forEach(function(h){
+        allDates[h.date] = (allDates[h.date]||0) + 1;
+      });
+    });
+    var nTrackers = Object.keys(state.trackers).length;
+    var streak = 0;
+    var checkDate = new Date();
+    var todayStr = todayISO();
+    if(!allDates[todayStr] || allDates[todayStr] < nTrackers){
+      checkDate.setDate(checkDate.getDate()-1);
+    }
+    for(var i=0;i<3650;i++){
+      var local = new Date(checkDate.getFullYear(), checkDate.getMonth(), checkDate.getDate());
+      var y = local.getFullYear(), m=('0'+(local.getMonth()+1)).slice(-2), dd=('0'+local.getDate()).slice(-2);
+      var iso = y+'-'+m+'-'+dd;
+      if(allDates[iso] && allDates[iso] >= nTrackers){
+        streak++;
+        checkDate.setDate(checkDate.getDate()-1);
+      } else break;
+    }
+    return streak;
+  }
+
+  function totalNights(){
+    var s = new Set();
+    Object.keys(state.trackers).forEach(function(k){
+      state.trackers[k].history.forEach(function(h){ s.add(h.date); });
+    });
+    return s.size;
+  }
+
+  function nextSuggestion(tr){
+    var start = tr.currentPage + 1;
+    var end = tr.currentPage + tr.step;
+    if(tr.totalPages && start > tr.totalPages){ start = 1; end = tr.step; }
+    return tr.step > 1 ? (start + '-' + end) : String(start);
+  }
+
+  function render(){
+    if(!state){
+      app.innerHTML = '<div class="loadingscreen">Chargement du suivi…</div>';
+      return;
+    }
+    var streak = computeStreak();
+    var nights = totalNights();
+    var html = '';
+    html += '<div class="wrap">';
+    html += '<header class="top">';
+    html += '<span class="kicker">Programme du soir</span>';
+    html += '<h1>' + state.people.map(esc).join(' &amp; ') + '</h1>';
+    html += '<p>Deux pages du Coran chaque nuit, une page de Al-Baqara en plus &mdash; jusqu\'au bout, puis on recommence.</p>';
+    html += '<div class="streak">';
+    html += '<div class="stat"><span class="n">' + streak + '</span><span class="l">nuit' + (streak>1?'s':'') + ' d\'affilée</span></div>';
+    html += '<div class="divider"></div>';
+    html += '<div class="stat"><span class="n">' + nights + '</span><span class="l">nuit' + (nights>1?'s':'') + ' au total</span></div>';
+    html += '</div>';
+    var statusLabel = syncStatus === 'ok' ? 'Synchronisé avec ' + (state.people[1] || 'l\'autre appareil') : (syncStatus === 'err' ? 'Connexion impossible — vérifiez votre réseau' : 'Connexion en cours…');
+    html += '<div class="syncstate ' + (syncStatus==='ok'?'ok':(syncStatus==='err'?'err':'')) + '"><span class="sdot"></span>' + statusLabel + '</div>';
+    html += '</header>';
+    html += '<div class="cards">';
+    html += renderCard('khatm', state.trackers.khatm);
+    html += renderCard('baqara', state.trackers.baqara);
+    html += '</div>';
+    html += '<footer class="foot">Les validations sont partagées et mises à jour en direct sur les deux téléphones.</footer>';
+    html += '</div>';
+    app.innerHTML = html;
+    attachHandlers();
+  }
+
+  function renderCard(key, tr){
+    var pct = tr.totalPages ? Math.min(100, Math.round((tr.currentPage/tr.totalPages)*100)) : null;
+    var html = '<div class="card" data-key="'+key+'">';
+    html += '<div class="cardhead"><div><h2>'+esc(tr.name)+'</h2><p class="obj">Objectif : '+tr.step+' page'+(tr.step>1?'s':'')+' / nuit'+(tr.totalPages?' &middot; reprend à la page 1 une fois finie':'')+'</p></div>';
+    html += '<button class="linkbtn" data-action="toggle-settings" data-key="'+key+'">Réglages</button></div>';
+    html += '<div class="pageNow"><span class="num">'+tr.currentPage+'</span><span class="lbl">page actuelle'+(tr.totalPages?(' / '+tr.totalPages):'')+'</span></div>';
+    if(pct !== null){
+      html += '<div class="progress"><div style="width:'+pct+'%"></div></div>';
+      html += '<p class="progtxt">'+pct+'% de ce khatm</p>';
+    }
+    html += '<p class="cyclecount">Khatm terminés : <b>'+tr.cycles+'</b></p>';
+
+    if(openSettings === key){
+      html += '<div class="settingsPanel">';
+      html += '<div class="row2"><div><label>Page actuelle</label><input type="number" min="0" id="set-current-'+key+'" value="'+tr.currentPage+'"></div>';
+      html += '<div><label>Pages / nuit</label><input type="number" min="1" id="set-step-'+key+'" value="'+tr.step+'"></div></div>';
+      html += '<div><label>Nombre total de pages (pour la reprise auto, laisser vide sinon)</label><input type="number" min="1" id="set-total-'+key+'" value="'+(tr.totalPages||'')+'"></div>';
+      html += '<p class="hint">Le Coran complet compte généralement 604 pages (Mushaf Uthmani). Pour Al-Baqara, laissez vide si vous ne comptez pas encore le cycle exact.</p>';
+      html += '<div class="formbtns"><button class="secondary" data-action="cancel-settings">Annuler</button><button class="primary" data-action="save-settings" data-key="'+key+'">Enregistrer</button></div>';
+      html += '</div>';
+    }
+
+    html += '<div class="btnrow">';
+    html += '<button class="primary" data-action="toggle-form" data-key="'+key+'">Valider ce soir</button>';
+    if(tr.history.length){
+      html += '<button class="secondary" data-action="undo" data-key="'+key+'">Annuler la dernière</button>';
+    }
+    html += '</div>';
+
+    if(openForm === key){
+      var sug = nextSuggestion(tr);
+      html += '<div class="form">';
+      html += '<div class="row2"><div><label>Date</label><input type="date" id="form-date-'+key+'" value="'+todayISO()+'"></div>';
+      html += '<div><label>Page(s) lue(s)</label><input type="text" id="form-pages-'+key+'" value="'+sug+'"></div></div>';
+      html += '<div><label>Validé par</label><select id="form-who-'+key+'"><option value="">—</option>';
+      state.people.forEach(function(p){ html += '<option value="'+esc(p)+'">'+esc(p)+'</option>'; });
+      html += '<option value="Ensemble">Ensemble</option></select></div>';
+      html += '<div class="formbtns"><button class="secondary" data-action="cancel-form">Annuler</button><button class="primary" data-action="confirm-validate" data-key="'+key+'">Confirmer</button></div>';
+      html += '</div>';
+    }
+
+    html += '<div class="history"><h3>Historique récent</h3><div class="hlist">';
+    if(!tr.history.length){
+      html += '<div class="empty">Aucune validation pour le moment.</div>';
+    } else {
+      var recent = tr.history.slice().reverse().slice(0,15);
+      recent.forEach(function(h, idx){
+        var realIdx = tr.history.length - 1 - idx;
+        html += '<div class="hitem"><div class="hleft"><span class="dot"></span><span class="date">'+fmtDateShort(h.date)+'</span><span class="pg">p. '+esc(h.pages)+'</span>';
+        if(h.who){ html += '<span class="who">'+esc(h.who)+'</span>'; }
+        html += '</div><button class="del" data-action="delete-entry" data-key="'+key+'" data-idx="'+realIdx+'">Supprimer</button></div>';
+      });
+    }
+    html += '</div></div>';
+    html += '</div>';
+    return html;
+  }
+
+  function attachHandlers(){
+    app.querySelectorAll('[data-action]').forEach(function(el){
+      el.addEventListener('click', function(){
+        var action = el.getAttribute('data-action');
+        var key = el.getAttribute('data-key');
+        if(action === 'toggle-form'){
+          openForm = (openForm === key) ? null : key;
+          openSettings = null;
+          render();
+        } else if(action === 'cancel-form'){
+          openForm = null; render();
+        } else if(action === 'toggle-settings'){
+          openSettings = (openSettings === key) ? null : key;
+          openForm = null;
+          render();
+        } else if(action === 'cancel-settings'){
+          openSettings = null; render();
+        } else if(action === 'save-settings'){
+          var tr = state.trackers[key];
+          var cur = parseInt(document.getElementById('set-current-'+key).value, 10);
+          var step = parseInt(document.getElementById('set-step-'+key).value, 10);
+          var totalRaw = document.getElementById('set-total-'+key).value;
+          tr.currentPage = isNaN(cur) ? tr.currentPage : cur;
+          tr.step = isNaN(step) || step < 1 ? tr.step : step;
+          tr.totalPages = totalRaw === '' ? null : (parseInt(totalRaw,10) || null);
+          openSettings = null;
+          commit();
+        } else if(action === 'confirm-validate'){
+          var tr2 = state.trackers[key];
+          var dateVal = document.getElementById('form-date-'+key).value || todayISO();
+          var pagesVal = document.getElementById('form-pages-'+key).value.trim();
+          var whoVal = document.getElementById('form-who-'+key).value;
+          if(!pagesVal){ return; }
+          tr2.history.push({date: dateVal, pages: pagesVal, who: whoVal});
+          tr2.history.sort(function(a,b){ return a.date < b.date ? -1 : (a.date > b.date ? 1 : 0); });
+          var lastPg = lastPageNumber(pagesVal);
+          if(lastPg !== null){
+            if(tr2.totalPages && lastPg >= tr2.totalPages){
+              tr2.cycles += 1;
+              tr2.currentPage = 0;
+            } else {
+              tr2.currentPage = lastPg;
+            }
+          }
+          openForm = null;
+          commit();
+        } else if(action === 'undo'){
+          var tr3 = state.trackers[key];
+          if(tr3.history.length){
+            tr3.history.pop();
+            var last = tr3.history.length ? lastPageNumber(tr3.history[tr3.history.length-1].pages) : 0;
+            tr3.currentPage = last || 0;
+            commit();
+          }
+        } else if(action === 'delete-entry'){
+          var idx = parseInt(el.getAttribute('data-idx'),10);
+          var tr4 = state.trackers[key];
+          tr4.history.splice(idx,1);
+          var lastE = tr4.history.length ? lastPageNumber(tr4.history[tr4.history.length-1].pages) : 0;
+          tr4.currentPage = lastE || 0;
+          commit();
+        }
+      });
+    });
+  }
+
+  // --- Persistance partagée via Supabase ---
+  function commit(){
+    render();
+    if(saving) return;
+    saving = true;
+    sb.from('suivi_coran')
+      .update({ data: state, updated_at: new Date().toISOString() })
+      .eq('id', ROW_ID)
+      .then(function(res){
+        saving = false;
+        if(res.error){
+          console.error('Erreur de sauvegarde', res.error);
+          syncStatus = 'err';
+          render();
+        } else if(syncStatus !== 'ok'){
+          syncStatus = 'ok';
+          render();
+        }
+      });
+  }
+
+  function loadInitial(){
+    sb.from('suivi_coran').select('data').eq('id', ROW_ID).single()
+      .then(function(res){
+        if(res.error){
+          console.error('Erreur de chargement', res.error);
+          syncStatus = 'err';
+          state = defaultState;
+          render();
+          return;
+        }
+        var remote = res.data && res.data.data;
+        if(remote && remote.trackers){
+          state = remote;
+        } else {
+          // Base vide : on l'initialise avec l'état par défaut
+          state = defaultState;
+          sb.from('suivi_coran').update({ data: state, updated_at: new Date().toISOString() }).eq('id', ROW_ID).then(function(){});
+        }
+        syncStatus = 'ok';
+        render();
+        subscribeRealtime();
+      });
+  }
+
+  function subscribeRealtime(){
+    sb.channel('suivi_coran_changes')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'suivi_coran', filter: 'id=eq.' + ROW_ID }, function(payload){
+        var remote = payload.new && payload.new.data;
+        if(remote && remote.trackers){
+          state = remote;
+          openForm = null;
+          openSettings = null;
+          syncStatus = 'ok';
+          render();
+        }
+      })
+      .subscribe();
+  }
+
+  render();
+  loadInitial();
+})();
+</script>
+</body>
+</html>
